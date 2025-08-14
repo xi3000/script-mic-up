@@ -1,10 +1,11 @@
 --[[
-    MINI FLOAT UI ULTIMATE - 1 Click Full Power
+    MINI FLOAT UI PRO - DEP + Gradient + Hover + Animation
 ]]
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
@@ -39,8 +40,6 @@ local function tpToPlayer(name)
     local target=Players:FindFirstChild(name)
     if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
         LocalPlayer.Character:MoveTo(target.Character.HumanoidRootPart.Position+Vector3.new(0,3,0))
-    else
-        warn("Không tìm thấy:",name)
     end
 end
 
@@ -87,47 +86,71 @@ local function stopFly()
     end
 end
 
--- Create Float UI
+-- Create UI
 local screenGui=Instance.new("ScreenGui",PlayerGui)
-screenGui.Name="MiniFloatUI"
+screenGui.Name="ProMiniUI"
 
+-- Float Button
 local floatBtn=Instance.new("TextButton",screenGui)
 floatBtn.Size=UDim2.new(0,60,0,60)
 floatBtn.Position=UDim2.new(0,50,0,50)
-floatBtn.BackgroundColor3=Color3.fromRGB(0,0,0)
-floatBtn.BackgroundTransparency=0.4
+floatBtn.BackgroundColor3=Color3.fromRGB(25,25,25)
+floatBtn.BackgroundTransparency=0.1
 floatBtn.Text="Menu"
 floatBtn.TextColor3=Color3.fromRGB(255,255,255)
 floatBtn.TextScaled=true
-floatBtn.AutoButtonColor=true
+floatBtn.AutoButtonColor=false
 floatBtn.ZIndex=10
+floatBtn.Font=Enum.Font.GothamBold
+
+-- Glow Effect
+local glow=Instance.new("UIStroke",floatBtn)
+glow.Thickness=3
+glow.Color=Color3.fromRGB(0, 255, 200)
+glow.Transparency=0.5
 
 -- Main Panel
 local panel=Instance.new("Frame",screenGui)
-panel.Size=UDim2.new(0,300,0,400)
+panel.Size=UDim2.new(0,280,0,380)
 panel.Position=UDim2.new(0,50,0,120)
 panel.BackgroundColor3=Color3.fromRGB(20,20,20)
-panel.BackgroundTransparency=0.2
+panel.BackgroundTransparency=0.1
 panel.Visible=false
 panel.BorderSizePixel=0
 panel.ZIndex=9
+panel.AnchorPoint=Vector2.new(0,0)
+panel.ClipsDescendants=true
 
+-- Gradient Background
+local grad=Instance.new("UIGradient",panel)
+grad.Color=ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(0,0,50)), ColorSequenceKeypoint.new(1,Color3.fromRGB(0,100,255))}
+grad.Rotation=45
+
+-- Title
 local title=Instance.new("TextLabel",panel)
 title.Size=UDim2.new(1,0,0,30)
-title.BackgroundColor3=Color3.fromRGB(30,30,30)
-title.Text="Player Hacks ULTIMATE"
+title.BackgroundTransparency=1
+title.Text="PRO HACK MENU"
 title.TextColor3=Color3.fromRGB(255,255,255)
 title.TextScaled=true
-title.Font=Enum.Font.SourceSansBold
+title.Font=Enum.Font.GothamBold
 
+-- Close Button
 local closeBtn=Instance.new("TextButton",panel)
 closeBtn.Size=UDim2.new(0,30,0,30)
 closeBtn.Position=UDim2.new(1,-35,0,0)
 closeBtn.Text="X"
 closeBtn.TextColor3=Color3.fromRGB(255,255,255)
-closeBtn.BackgroundColor3=Color3.fromRGB(150,0,0)
-closeBtn.MouseButton1Click:Connect(function() panel.Visible=false end)
+closeBtn.BackgroundColor3=Color3.fromRGB(180,0,0)
+closeBtn.MouseButton1Click:Connect(function()
+    local tween=TweenService:Create(panel,TweenInfo.new(0.3),{Size=UDim2.new(0,0,0,0)})
+    tween:Play()
+    tween.Completed:Wait()
+    panel.Visible=false
+    panel.Size=UDim2.new(0,280,0,380)
+end)
 
+-- Utils
 local function createBtn(parent,pos,text,color,callback)
     local btn=Instance.new("TextButton",parent)
     btn.Size=UDim2.new(0,120,0,30)
@@ -135,7 +158,15 @@ local function createBtn(parent,pos,text,color,callback)
     btn.Text=text
     btn.BackgroundColor3=color
     btn.TextColor3=Color3.fromRGB(255,255,255)
-    btn.TextScaled=false
+    btn.Font=Enum.Font.GothamBold
+    btn.MouseEnter:Connect(function()
+        local t=TweenService:Create(btn,TweenInfo.new(0.2),{BackgroundTransparency=0.3})
+        t:Play()
+    end)
+    btn.MouseLeave:Connect(function()
+        local t=TweenService:Create(btn,TweenInfo.new(0.2),{BackgroundTransparency=0})
+        t:Play()
+    end)
     btn.MouseButton1Click:Connect(callback)
     return btn
 end
@@ -147,19 +178,26 @@ local function createSlider(parent,pos,labelText,minVal,maxVal,default,callback)
     lbl.Text=labelText.." "..default
     lbl.TextColor3=Color3.fromRGB(255,255,255)
     lbl.BackgroundTransparency=1
-    lbl.TextScaled=false
+    lbl.Font=Enum.Font.Gotham
 
-    local slider=Instance.new("TextButton",parent)
+    local slider=Instance.new("Frame",parent)
     slider.Size=UDim2.new(0,250,0,20)
     slider.Position=pos+UDim2.new(0,0,0,20)
     slider.BackgroundColor3=Color3.fromRGB(80,80,80)
-    slider.Text=""
+    slider.BorderSizePixel=0
+
+    local fill=Instance.new("Frame",slider)
+    fill.Size=UDim2.new(default/maxVal,0,1,0)
+    fill.BackgroundColor3=Color3.fromRGB(0,255,200)
+    fill.BorderSizePixel=0
+
     local dragging=false
     local function update(input)
         local posX=input.Position.X-slider.AbsolutePosition.X
         posX=math.clamp(posX,0,slider.AbsoluteSize.X)
         local val=minVal+((posX/slider.AbsoluteSize.X)*(maxVal-minVal))
         val=math.floor(val)
+        fill.Size=UDim2.new(val/maxVal,0,1,0)
         lbl.Text=labelText.." "..val
         callback(val)
     end
@@ -183,12 +221,12 @@ local function createSlider(parent,pos,labelText,minVal,maxVal,default,callback)
 end
 
 -- Sliders
-createSlider(panel,UDim2.new(0,25,0,50),"Speed",1,100,speedValue,setSpeed)
-createSlider(panel,UDim2.new(0,25,0,100),"Jump",1,100,jumpValue,setJump)
-createSlider(panel,UDim2.new(0,25,0,150),"Fly Speed",1,50,flySpeed,function(val) flySpeed=val end)
+createSlider(panel,UDim2.new(0,20,0,50),"Speed",1,100,speedValue,function(val) speedValue=val setSpeed(val) end)
+createSlider(panel,UDim2.new(0,20,0,100),"Jump",1,100,jumpValue,function(val) jumpValue=val setJump(val) end)
+createSlider(panel,UDim2.new(0,20,0,150),"Fly Speed",1,50,flySpeed,function(val) flySpeed=val end)
 
 -- Buttons
-createBtn(panel,UDim2.new(0,25,0,200),"Fly: OFF",Color3.fromRGB(0,0,150),function()
+createBtn(panel,UDim2.new(0,20,0,200),"Fly: OFF",Color3.fromRGB(0,0,150),function()
     if flying then stopFly() else startFly() end
 end)
 createBtn(panel,UDim2.new(0,150,0,200),"1 Click FULL POWER",Color3.fromRGB(255,0,0),function()
@@ -202,45 +240,32 @@ createBtn(panel,UDim2.new(0,150,0,200),"1 Click FULL POWER",Color3.fromRGB(255,0
     if not flying then startFly() end
 end)
 
--- TP & Refresh
+-- TP
 local playerList=getPlayerList()
 local dropdown=Instance.new("TextButton",panel)
 dropdown.Size=UDim2.new(0,250,0,30)
-dropdown.Position=UDim2.new(0,25,0,250)
+dropdown.Position=UDim2.new(0,20,0,250)
 dropdown.Text="Select Player"
 dropdown.BackgroundColor3=Color3.fromRGB(70,70,70)
 dropdown.TextColor3=Color3.fromRGB(255,255,255)
+dropdown.Font=Enum.Font.Gotham
 dropdown.MouseButton1Click:Connect(function()
     selectedPlayer=playerList[math.random(1,#playerList)]
     dropdown.Text="TP -> "..selectedPlayer
 end)
 
-createBtn(panel,UDim2.new(0,25,0,290),"Teleport",Color3.fromRGB(0,150,150),function()
+createBtn(panel,UDim2.new(0,20,0,290),"Teleport",Color3.fromRGB(0,150,150),function()
     if selectedPlayer then tpToPlayer(selectedPlayer) end
 end)
 createBtn(panel,UDim2.new(0,150,0,290),"Refresh",Color3.fromRGB(150,150,0),function()
     playerList=getPlayerList()
 end)
 
--- Mobile Fly Buttons
-local function createMobileBtn(text,pos,dir)
-    local btn=Instance.new("TextButton",screenGui)
-    btn.Text=text
-    btn.Size=UDim2.new(0,50,0,50)
-    btn.Position=pos
-    btn.BackgroundTransparency=0.5
-    btn.MouseButton1Down:Connect(function() moveVector=moveVector+dir end)
-    btn.MouseButton1Up:Connect(function() moveVector=moveVector-dir end)
-end
-
-createMobileBtn("↑",UDim2.new(0,50,1,-150),Vector3.new(0,1,0))
-createMobileBtn("↓",UDim2.new(0,50,1,-90),Vector3.new(0,-1,0))
-createMobileBtn("←",UDim2.new(0,0,1,-120),workspace.CurrentCamera.CFrame.RightVector*-1)
-createMobileBtn("→",UDim2.new(0,100,1,-120),workspace.CurrentCamera.CFrame.RightVector)
-
--- Float button toggle panel
+-- Float button toggle panel with smooth animation
 floatBtn.MouseButton1Click:Connect(function()
-    panel.Visible=not panel.Visible
+    panel.Visible=true
+    panel.Size=UDim2.new(0,0,0,0)
+    TweenService:Create(panel,TweenInfo.new(0.3),{Size=UDim2.new(0,280,0,380)}):Play()
 end)
 
 -- Drag float button (mobile friendly)
