@@ -1,9 +1,7 @@
 --[[
-    FULL MOBILE + PC SUPPORT
-    WARNING: Only for testing in local/private games
+    MINI FLOAT UI ULTIMATE - 1 Click Full Power
 ]]
 
--- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -11,181 +9,263 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
 -- Variables
-local flying = false
-local flySpeed = 5
-local flyConnection
-local superSpeed = false
-local superJump = false
-local speedValue = 16
-local jumpValue = 50
-local moveVector = Vector3.new(0,0,0)
-local selectedPlayer = nil
+local flying=false
+local flySpeed=20
+local superSpeed=true
+local superJump=true
+local speedValue=16
+local jumpValue=50
+local moveVector=Vector3.new(0,0,0)
+local selectedPlayer=nil
 
--- Ensure character is loaded
 if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("Humanoid") then
     LocalPlayer.CharacterAdded:Wait()
 end
 
 -- Functions
 local function setSpeed(value)
-    speedValue = value
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         LocalPlayer.Character.Humanoid.WalkSpeed = superSpeed and value*5 or value
     end
 end
 
 local function setJump(value)
-    jumpValue = value
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         LocalPlayer.Character.Humanoid.JumpPower = superJump and value*5 or value
     end
 end
 
-local function tpToPlayer(targetName)
-    local target = Players:FindFirstChild(targetName)
+local function tpToPlayer(name)
+    local target=Players:FindFirstChild(name)
     if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-        LocalPlayer.Character:MoveTo(target.Character.HumanoidRootPart.Position + Vector3.new(0,3,0))
+        LocalPlayer.Character:MoveTo(target.Character.HumanoidRootPart.Position+Vector3.new(0,3,0))
     else
-        warn("Không tìm thấy người chơi:", targetName)
+        warn("Không tìm thấy:",name)
     end
 end
 
 local function getPlayerList()
-    local list = {}
-    for _, p in ipairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer then
-            table.insert(list, p.Name)
-        end
+    local list={}
+    for _,p in ipairs(Players:GetPlayers()) do
+        if p~=LocalPlayer then table.insert(list,p.Name) end
     end
     return list
 end
 
--- Fly functions
+-- Fly
+local flyConnection
 local function startFly()
     if flying then return end
-    flying = true
-    local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    flying=true
+    local hrp=LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-    local bg = Instance.new("BodyGyro", hrp)
-    bg.P = 9e4
-    bg.MaxTorque = Vector3.new(9e9,9e9,9e9)
-    bg.CFrame = hrp.CFrame
-    local bv = Instance.new("BodyVelocity", hrp)
-    bv.MaxForce = Vector3.new(9e9,9e9,9e9)
-    bv.Velocity = Vector3.new(0,0,0)
-    flyConnection = RunService.RenderStepped:Connect(function()
-        local camCF = workspace.CurrentCamera.CFrame
-        local dir = moveVector
-        if dir.Magnitude > 0 then dir = dir.Unit*flySpeed end
-        bv.Velocity = dir
-        bg.CFrame = camCF
+    local bg=Instance.new("BodyGyro",hrp)
+    bg.P=9e4
+    bg.MaxTorque=Vector3.new(9e9,9e9,9e9)
+    bg.CFrame=hrp.CFrame
+    local bv=Instance.new("BodyVelocity",hrp)
+    bv.MaxForce=Vector3.new(9e9,9e9,9e9)
+    bv.Velocity=Vector3.new(0,0,0)
+    flyConnection=RunService.RenderStepped:Connect(function()
+        local camCF=workspace.CurrentCamera.CFrame
+        local dir=moveVector
+        if dir.Magnitude>0 then dir=dir.Unit*flySpeed end
+        bv.Velocity=dir
+        bg.CFrame=camCF
     end)
 end
 
 local function stopFly()
     if not flying then return end
-    flying = false
+    flying=false
     if flyConnection then flyConnection:Disconnect() end
-    local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local hrp=LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if hrp then
-        for _, obj in ipairs(hrp:GetChildren()) do
+        for _,obj in ipairs(hrp:GetChildren()) do
             if obj:IsA("BodyGyro") or obj:IsA("BodyVelocity") then obj:Destroy() end
         end
     end
 end
 
--- Create UI
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/lxte/lates-lib/main/Main.lua"))()
-local Window = Library:CreateWindow({
-    Title = "Player Hacks",
-    Theme = "Dark",
-    Size = UDim2.fromOffset(600,400),
-    Transparency = 0.2,
-    Blurring = true,
-    MinimizeKeybind = Enum.KeyCode.LeftAlt,
-})
-Window.Frame.Parent = PlayerGui
-Window:SetTheme({
-    Dark = {
-        Primary = Color3.fromRGB(30,30,30),
-        Secondary = Color3.fromRGB(35,35,35),
-        Component = Color3.fromRGB(40,40,40),
-        Interactables = Color3.fromRGB(45,45,45),
-        Tab = Color3.fromRGB(200,200,200),
-        Title = Color3.fromRGB(240,240,240),
-        Description = Color3.fromRGB(200,200,200),
-        Shadow = Color3.fromRGB(0,0,0),
-        Outline = Color3.fromRGB(40,40,40),
-        Icon = Color3.fromRGB(220,220,220)
-    }
-})
-Window:AddTabSection({Name="Main",Order=1})
-Window:AddTabSection({Name="Settings",Order=2})
-local Main = Window:AddTab({Title="Main Controls",Section="Main",Icon="rbxassetid://11963373994"})
+-- Create Float UI
+local screenGui=Instance.new("ScreenGui",PlayerGui)
+screenGui.Name="MiniFloatUI"
 
--- Speed & Jump
-Window:AddSlider({Title="Walk Speed",Description="Chỉnh tốc độ chạy (max 100)",Tab=Main,MaxValue=100,Callback=setSpeed})
-Window:AddButton({Title="Super Speed x5",Description="Chạy nhanh gấp 5 lần",Tab=Main,Callback=function() superSpeed=true setSpeed(speedValue) end})
-Window:AddSlider({Title="Jump Power",Description="Chỉnh độ cao nhảy (max 100)",Tab=Main,MaxValue=100,Callback=setJump})
-Window:AddButton({Title="Super Jump x5",Description="Nhảy cao gấp 5 lần",Tab=Main,Callback=function() superJump=true setJump(jumpValue) end})
+local floatBtn=Instance.new("TextButton",screenGui)
+floatBtn.Size=UDim2.new(0,60,0,60)
+floatBtn.Position=UDim2.new(0,50,0,50)
+floatBtn.BackgroundColor3=Color3.fromRGB(0,0,0)
+floatBtn.BackgroundTransparency=0.4
+floatBtn.Text="Menu"
+floatBtn.TextColor3=Color3.fromRGB(255,255,255)
+floatBtn.TextScaled=true
+floatBtn.AutoButtonColor=true
+floatBtn.ZIndex=10
 
--- Fly
-Window:AddToggle({Title="Fly",Description="Bật/tắt bay",Tab=Main,Callback=function(state) if state then startFly() else stopFly() end end})
-Window:AddSlider({Title="Fly Speed",Description="Tốc độ bay",Tab=Main,MaxValue=20,Callback=function(value) flySpeed=value end})
+-- Main Panel
+local panel=Instance.new("Frame",screenGui)
+panel.Size=UDim2.new(0,300,0,400)
+panel.Position=UDim2.new(0,50,0,120)
+panel.BackgroundColor3=Color3.fromRGB(20,20,20)
+panel.BackgroundTransparency=0.2
+panel.Visible=false
+panel.BorderSizePixel=0
+panel.ZIndex=9
 
--- Teleport
-local playerDropdown = Window:AddDropdown({Title="Chọn người chơi",Description="Chọn tên để teleport",Tab=Main,Options=getPlayerList(),Callback=function(Name) selectedPlayer=Name end})
-Window:AddButton({Title="Teleport",Description="Dịch chuyển đến người chơi đã chọn",Tab=Main,Callback=function() if selectedPlayer then tpToPlayer(selectedPlayer) else warn("Chưa chọn người chơi!") end end})
-Window:AddButton({Title="Refresh Players",Description="Cập nhật danh sách người chơi",Tab=Main,Callback=function() playerDropdown:SetOptions(getPlayerList()) Window:Notify({Title="Refresh",Description="Danh sách đã cập nhật",Duration=3}) end})
+local title=Instance.new("TextLabel",panel)
+title.Size=UDim2.new(1,0,0,30)
+title.BackgroundColor3=Color3.fromRGB(30,30,30)
+title.Text="Player Hacks ULTIMATE"
+title.TextColor3=Color3.fromRGB(255,255,255)
+title.TextScaled=true
+title.Font=Enum.Font.SourceSansBold
 
--- Mobile Fly buttons
-local screenGui = Instance.new("ScreenGui", PlayerGui)
-screenGui.Name = "FlyControls"
+local closeBtn=Instance.new("TextButton",panel)
+closeBtn.Size=UDim2.new(0,30,0,30)
+closeBtn.Position=UDim2.new(1,-35,0,0)
+closeBtn.Text="X"
+closeBtn.TextColor3=Color3.fromRGB(255,255,255)
+closeBtn.BackgroundColor3=Color3.fromRGB(150,0,0)
+closeBtn.MouseButton1Click:Connect(function() panel.Visible=false end)
 
-local function createButton(text,pos)
-    local btn = Instance.new("TextButton",screenGui)
-    btn.Text=text
-    btn.Size=UDim2.new(0,60,0,60)
+local function createBtn(parent,pos,text,color,callback)
+    local btn=Instance.new("TextButton",parent)
+    btn.Size=UDim2.new(0,120,0,30)
     btn.Position=pos
-    btn.BackgroundTransparency=0.5
+    btn.Text=text
+    btn.BackgroundColor3=color
+    btn.TextColor3=Color3.fromRGB(255,255,255)
+    btn.TextScaled=false
+    btn.MouseButton1Click:Connect(callback)
     return btn
 end
 
-local upButton = createButton("↑",UDim2.new(0,50,1,-150))
-local downButton = createButton("↓",UDim2.new(0,50,1,-80))
-local leftButton = createButton("←",UDim2.new(0,0,1,-115))
-local rightButton = createButton("→",UDim2.new(0,100,1,-115))
+local function createSlider(parent,pos,labelText,minVal,maxVal,default,callback)
+    local lbl=Instance.new("TextLabel",parent)
+    lbl.Size=UDim2.new(0,250,0,20)
+    lbl.Position=pos
+    lbl.Text=labelText.." "..default
+    lbl.TextColor3=Color3.fromRGB(255,255,255)
+    lbl.BackgroundTransparency=1
+    lbl.TextScaled=false
 
--- Touch hold movement
-local function touchHold(button,dir)
-    local holding = false
-    button.InputBegan:Connect(function(input)
-        if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
-            holding=true
-            moveVector = moveVector + dir
+    local slider=Instance.new("TextButton",parent)
+    slider.Size=UDim2.new(0,250,0,20)
+    slider.Position=pos+UDim2.new(0,0,0,20)
+    slider.BackgroundColor3=Color3.fromRGB(80,80,80)
+    slider.Text=""
+    local dragging=false
+    local function update(input)
+        local posX=input.Position.X-slider.AbsolutePosition.X
+        posX=math.clamp(posX,0,slider.AbsoluteSize.X)
+        local val=minVal+((posX/slider.AbsoluteSize.X)*(maxVal-minVal))
+        val=math.floor(val)
+        lbl.Text=labelText.." "..val
+        callback(val)
+    end
+    slider.InputBegan:Connect(function(input)
+        if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
+            dragging=true
+            update(input)
         end
     end)
-    button.InputEnded:Connect(function(input)
-        if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
-            holding=false
-            moveVector = moveVector - dir
+    slider.InputChanged:Connect(function(input)
+        if dragging then update(input) end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch) then
+            update(input)
         end
+    end)
+    slider.InputEnded:Connect(function(input)
+        dragging=false
     end)
 end
 
-touchHold(upButton,Vector3.new(0,1,0))
-touchHold(downButton,Vector3.new(0,-1,0))
-touchHold(leftButton,workspace.CurrentCamera.CFrame.RightVector*-1)
-touchHold(rightButton,workspace.CurrentCamera.CFrame.RightVector)
+-- Sliders
+createSlider(panel,UDim2.new(0,25,0,50),"Speed",1,100,speedValue,setSpeed)
+createSlider(panel,UDim2.new(0,25,0,100),"Jump",1,100,jumpValue,setJump)
+createSlider(panel,UDim2.new(0,25,0,150),"Fly Speed",1,50,flySpeed,function(val) flySpeed=val end)
 
--- Menu toggle button for mobile
-local toggleMenuButton = Instance.new("TextButton",screenGui)
-toggleMenuButton.Text="Menu"
-toggleMenuButton.Size=UDim2.new(0,80,0,40)
-toggleMenuButton.Position=UDim2.new(1,-100,0,50)
-toggleMenuButton.BackgroundTransparency=0.5
-toggleMenuButton.MouseButton1Click:Connect(function()
-    Window:SetVisibility(not Window:GetVisibility())
+-- Buttons
+createBtn(panel,UDim2.new(0,25,0,200),"Fly: OFF",Color3.fromRGB(0,0,150),function()
+    if flying then stopFly() else startFly() end
+end)
+createBtn(panel,UDim2.new(0,150,0,200),"1 Click FULL POWER",Color3.fromRGB(255,0,0),function()
+    superSpeed=true
+    superJump=true
+    speedValue=100
+    jumpValue=100
+    flySpeed=20
+    setSpeed(speedValue)
+    setJump(jumpValue)
+    if not flying then startFly() end
 end)
 
-Window:Notify({Title="UI Loaded!",Description="Hỗ trợ Mobile & PC. Dùng nút Menu để ẩn/hiện UI",Duration=5})
+-- TP & Refresh
+local playerList=getPlayerList()
+local dropdown=Instance.new("TextButton",panel)
+dropdown.Size=UDim2.new(0,250,0,30)
+dropdown.Position=UDim2.new(0,25,0,250)
+dropdown.Text="Select Player"
+dropdown.BackgroundColor3=Color3.fromRGB(70,70,70)
+dropdown.TextColor3=Color3.fromRGB(255,255,255)
+dropdown.MouseButton1Click:Connect(function()
+    selectedPlayer=playerList[math.random(1,#playerList)]
+    dropdown.Text="TP -> "..selectedPlayer
+end)
+
+createBtn(panel,UDim2.new(0,25,0,290),"Teleport",Color3.fromRGB(0,150,150),function()
+    if selectedPlayer then tpToPlayer(selectedPlayer) end
+end)
+createBtn(panel,UDim2.new(0,150,0,290),"Refresh",Color3.fromRGB(150,150,0),function()
+    playerList=getPlayerList()
+end)
+
+-- Mobile Fly Buttons
+local function createMobileBtn(text,pos,dir)
+    local btn=Instance.new("TextButton",screenGui)
+    btn.Text=text
+    btn.Size=UDim2.new(0,50,0,50)
+    btn.Position=pos
+    btn.BackgroundTransparency=0.5
+    btn.MouseButton1Down:Connect(function() moveVector=moveVector+dir end)
+    btn.MouseButton1Up:Connect(function() moveVector=moveVector-dir end)
+end
+
+createMobileBtn("↑",UDim2.new(0,50,1,-150),Vector3.new(0,1,0))
+createMobileBtn("↓",UDim2.new(0,50,1,-90),Vector3.new(0,-1,0))
+createMobileBtn("←",UDim2.new(0,0,1,-120),workspace.CurrentCamera.CFrame.RightVector*-1)
+createMobileBtn("→",UDim2.new(0,100,1,-120),workspace.CurrentCamera.CFrame.RightVector)
+
+-- Float button toggle panel
+floatBtn.MouseButton1Click:Connect(function()
+    panel.Visible=not panel.Visible
+end)
+
+-- Drag float button (mobile friendly)
+local dragging=false
+local dragInput
+local dragStart
+local startPos
+floatBtn.InputBegan:Connect(function(input)
+    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseButton1 then
+        dragging=true
+        dragStart=input.Position
+        startPos=floatBtn.Position
+        input.Changed:Connect(function()
+            if input.UserInputState==Enum.UserInputState.End then dragging=false end
+        end)
+    end
+end)
+floatBtn.InputChanged:Connect(function(input)
+    if input.UserInputType==Enum.UserInputType.Touch or input.UserInputType==Enum.UserInputType.MouseMovement then
+        dragInput=input
+    end
+end)
+RunService.RenderStepped:Connect(function()
+    if dragging and dragInput then
+        local delta=dragInput.Position-dragStart
+        floatBtn.Position=startPos+UDim2.new(0,delta.X,0,delta.Y)
+    end
+end)
